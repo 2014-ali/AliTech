@@ -1,0 +1,57 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Your Muslim Friend - صديقك المسلم</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Cairo', 'Tajawal', sans-serif;
+        background-color: #fdfbf7;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* يمنع السكرول في كامل الصفحة */
+        height: 100vh;
+        width: 100vw;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .luxury-gradient {
+        background: linear-gradient(135deg, #1e3a34 0%, #064e3b 100%);
+      }
+      .gold-text {
+        color: #d4af37;
+      }
+      .gold-bg {
+        background-color: #d4af37;
+      }
+      .animate-bounce-slow {
+        animation: bounce 3s infinite;
+      }
+      @keyframes bounce {
+        0%, 100% { transform: translateY(-5%); }
+        50% { transform: translateY(0); }
+      }
+      /* سكرول داخلي ناعم للمحتوى الضروري فقط */
+      .scroll-hide::-webkit-scrollbar { display: none; }
+      .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
