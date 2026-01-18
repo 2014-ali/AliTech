@@ -2,37 +2,52 @@
 import React from 'react';
 
 export const APP_NAME = "صديقك المسلم";
-export const DEVELOPER = "AliTech";
-export const ADMIN_PHONE = "79071048";
-export const ADMIN_CODE = "YMF-ADMIN-0001";
+export const DEVELOPER = "Ali Taha (AliTech)";
 
-export const COPYRIGHT = "جميع الحقوق محفوظة © Ali Taha";
+export const ADMIN_CODE = "AliTech2014";
+export const ADMIN_PHONE = "+96170000000";
 
-export const ICONS = {
-  Mosque: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-    </svg>
-  ),
-  Quran: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-    </svg>
-  ),
-  Robot: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
-  ),
-  Family: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-  ),
-  Settings: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  )
+export const SHEIKHS = [
+  { id: 'alafasy', name: 'مشاري العفاسي', apiId: 'ar.alafasy' },
+  { id: 'abdulbasit', name: 'عبد الباسط عبد الصمد', apiId: 'ar.abdulbasit' },
+  { id: 'minshawi', name: 'المنشاوي', apiId: 'ar.minshawi' },
+  { id: 'shuraim', name: 'سعود الشريم', apiId: 'ar.shuraym' },
+  { id: 'sudais', name: 'عبد الرحمن السديس', apiId: 'ar.sudais' }
+];
+
+export const COLORS = {
+  primary: "#50A9B4",
+  secondary: "#D4AF37",
+  bgLight: "#FDFBF7",
+  textDark: "#1E3A34",
 };
+
+export const AppLogo = ({ size = "w-24 h-24" }: { size?: string }) => (
+  <div className={`${size} bg-white rounded-[1.5rem] flex flex-col items-center justify-center shadow-xl p-1 border-[3px] border-[#D4AF37] relative overflow-hidden`}>
+    <div className="w-full h-full flex flex-col items-center justify-center relative z-10">
+      <svg viewBox="0 0 100 100" className="w-[75%] h-[75%] mb-0.5">
+        {/* المنارة */}
+        <path d="M70 42 L74 42 L74 72 L70 72 Z" fill="#50A9B4" />
+        <path d="M70 42 L72 35 L74 42 Z" fill="#50A9B4" />
+        <circle cx="72" cy="34" r="1.5" fill="#D4AF37" />
+        
+        {/* القاعدة */}
+        <path d="M25 72 L68 72 L68 62 L25 62 Z" fill="#50A9B4" />
+        <rect x="30" y="65" width="4" height="4" rx="1" fill="white" fillOpacity="0.3" />
+        <rect x="40" y="65" width="4" height="4" rx="1" fill="white" fillOpacity="0.3" />
+        <rect x="50" y="65" width="4" height="4" rx="1" fill="white" fillOpacity="0.3" />
+        <rect x="60" y="65" width="4" height="4" rx="1" fill="white" fillOpacity="0.3" />
+
+        {/* القبة */}
+        <path d="M28 62 C28 35 65 35 65 62" fill="#50A9B4" />
+        
+        {/* الهلال */}
+        <path d="M46.5 32 A 4 4 0 1 0 46.5 40 A 3 3 0 1 1 46.5 32" fill="#D4AF37" />
+      </svg>
+      <div className="text-center -mt-1">
+        <div className="text-[#1E3A34] text-[7px] font-[900] leading-none mb-0.5" style={{ fontFamily: 'Cairo' }}>صديقك المسلم</div>
+        <div className="text-[#50A9B4] text-[4px] font-bold leading-none opacity-90 uppercase tracking-[0.1em]">Your Muslim Friend</div>
+      </div>
+    </div>
+  </div>
+);

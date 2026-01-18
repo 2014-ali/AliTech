@@ -1,202 +1,196 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile, Gender, UserAgeGroup } from '../../types';
-import { APP_NAME, ADMIN_PHONE } from '../../constants';
+import { APP_NAME, AppLogo, COLORS } from '../../constants';
 
 interface Props {
   onComplete: (user: UserProfile) => void;
 }
 
+type AuthStep = 'language' | 'auth_type' | 'phone' | 'otp' | 'basic_info' | 'location';
+
+const translations = {
+  ar: {
+    welcome: "مرحباً بك مجدداً",
+    selectLang: "اختر لغة التطبيق",
+    phoneLogin: "رقم الهاتف",
+    back: "رجوع",
+    enterPhone: "أدخل رقم هاتفك",
+    sendOtp: "إرسال كود التحقق",
+    enterOtp: "أدخل كود التحقق (OTP)",
+    verify: "تحقق ودخول",
+    profileTitle: "الملف الشخصي",
+    fullName: "اسمك الكامل",
+    genderM: "ذكر",
+    genderF: "أنثى",
+    next: "التالي",
+    residence: "بيانات الإقامة",
+    country: "البلد (مثلاً: لبنان)",
+    city: "المدينة (مثلاً: بيروت)",
+    start: "ابدأ الآن 🕋",
+    error: "يرجى إكمال جميع الحقول المطلوبة"
+  },
+  en: {
+    welcome: "Welcome Back",
+    selectLang: "Select Language",
+    phoneLogin: "Phone Number",
+    back: "Back",
+    enterPhone: "Enter your phone",
+    sendOtp: "Send OTP Code",
+    enterOtp: "Enter OTP Code",
+    verify: "Verify & Enter",
+    profileTitle: "Personal Profile",
+    fullName: "Your Full Name",
+    genderM: "Male",
+    genderF: "Female",
+    next: "Next Step",
+    residence: "Residence Data",
+    country: "Country (e.g. USA)",
+    city: "City (e.g. NY)",
+    start: "Start Now 🕋",
+    error: "Please fill all required fields"
+  }
+};
+
 const Onboarding: React.FC<Props> = ({ onComplete }) => {
-  const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [phone, setPhone] = useState('');
-  const [verifyCode, setVerifyCode] = useState('');
-  const [copySuccess, setCopySuccess] = useState(false);
-  
+  const [step, setStep] = useState<AuthStep>('language');
+  const [inputCode, setInputCode] = useState(['', '', '', '', '', '']);
   const [formData, setFormData] = useState<Partial<UserProfile>>({
     name: '',
+    phone: '',
     gender: Gender.MALE,
     ageGroup: UserAgeGroup.ADULT,
-    nationality: '',
-    location: { lat: 33.8938, lng: 35.5018, city: '' },
-    isNewToIslam: false,
-    isChildMode: false,
-    hasWhishMoney: false,
-    subscriptionTier: 0,
+    language: 'ar',
+    isDarkMode: false,
+    subscriptionTier: 'free',
     prayerOffsets: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
-    sheikhs: {
-      fajr: 'العفاسي',
-      dhuhr: 'عبد الباسط',
-      asr: 'المنشاوي',
-      maghrib: 'الحصري',
-      isha: 'الشريم',
-      quran: 'العفاسي'
-    },
-    azanSound: 'standard',
-    isDoNotDisturb: false,
-    prePrayerReminder: 10,
+    location: { lat: 0, lng: 0, city: '' },
+    nationality: '',
     use12HourFormat: true,
-    robotName: 'علي'
+    prayerConfigs: {
+      fajr: { sheikh: 'مشاري العفاسي', azanType: 'standard', reminderBefore: 10, preReminderSound: 'soft_chime', isEnabled: true, repeatInterval: 5 },
+      dhuhr: { sheikh: 'مشاري العفاسي', azanType: 'standard', reminderBefore: 10, preReminderSound: 'soft_chime', isEnabled: true, repeatInterval: 5 },
+      asr: { sheikh: 'مشاري العفاسي', azanType: 'standard', reminderBefore: 10, preReminderSound: 'soft_chime', isEnabled: true, repeatInterval: 5 },
+      maghrib: { sheikh: 'مشاري العفاسي', azanType: 'standard', reminderBefore: 10, preReminderSound: 'soft_chime', isEnabled: true, repeatInterval: 5 },
+      isha: { sheikh: 'مشاري العفاسي', azanType: 'standard', reminderBefore: 10, preReminderSound: 'soft_chime', isEnabled: true, repeatInterval: 5 },
+    },
+    homeworkStatus: 'idle',
+    robotName: 'علي',
+    fastingDays: [],
+    recurringFasting: 'none'
   });
 
-  const getCleanURL = () => {
-    return window.location.href.split('#')[0];
+  const t = formData.language === 'en' ? translations.en : translations.ar;
+
+  const handleOtpChange = (index: number, value: string) => {
+    const newOtp = [...inputCode];
+    newOtp[index] = value.slice(-1);
+    setInputCode(newOtp);
+    if (value && index < 5) (document.getElementById(`otp-${index + 1}`) as HTMLInputElement)?.focus();
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(getCleanURL());
-    setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2000);
-  };
-
-  const nextStep = () => setStep(s => s + 1);
-
-  const simulateGoogleLogin = () => {
-    if (!formData.name) {
-      alert("يرجى كتابة الاسم قبل تسجيل الدخول عبر جوجل");
+  const finalize = () => {
+    if (!formData.name || !formData.nationality || !formData.location?.city) {
+      alert(t.error);
       return;
     }
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      nextStep();
-    }, 1500);
+    onComplete({ ...formData, id: Date.now().toString(), isVerified: true } as UserProfile);
   };
 
   return (
-    <div className="h-full flex flex-col p-10 text-center bg-[#FAF8F4] overflow-y-auto font-['Cairo'] relative">
-      <div className="mb-10 mt-6 relative z-10">
-        <div className="w-32 h-32 luxury-gradient rounded-[3.5rem] mx-auto flex items-center justify-center shadow-2xl border-4 border-[#d4af37] rotate-6 relative animate-in zoom-in duration-700">
-          <span className="text-7xl text-white -rotate-6">🌙</span>
-        </div>
-        <h1 className="text-4xl font-black mt-8 text-teal-950 tracking-tight uppercase">{APP_NAME}</h1>
-        <p className="text-[#d4af37] text-[10px] font-black mt-2 uppercase tracking-[0.5em] opacity-80">AliTech • Crafted for You</p>
-      </div>
+    <div className="onboarding-container bg-[#FDFBF7] dark:bg-[#0A0A0A] font-['Cairo'] relative h-full flex flex-col items-center justify-center p-6 overflow-y-auto">
+      <div className="w-full max-w-md flex flex-col items-center animate-in fade-in duration-700">
+        <AppLogo size="w-32 h-32 mb-10" />
 
-      <div className="flex-1 max-w-sm mx-auto w-full relative z-10">
-        {step === 1 && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
-            <div className="space-y-4">
-              <h2 className="text-2xl font-black text-teal-950">مرحباً بك في عالم الفخامة</h2>
-              <input 
-                type="text"
-                placeholder="ما هو اسمك الكريم؟"
-                className="w-full p-6 bg-white border-2 border-stone-100 rounded-[2.5rem] outline-none focus:border-[#d4af37] transition-all text-center text-lg font-black shadow-sm"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <button 
-                onClick={simulateGoogleLogin}
-                className="w-full bg-white border-2 border-stone-100 p-6 rounded-[2.5rem] flex items-center justify-center gap-4 shadow-xl active:scale-95 transition-all font-black"
-              >
-                {loading ? <div className="w-6 h-6 border-4 border-teal-950 border-t-transparent rounded-full animate-spin"></div> : (
-                  <>
-                    <img src="https://www.google.com/favicon.ico" className="w-6 h-6" alt="google" />
-                    <span className="text-teal-950">التسجيل عبر Google</span>
-                  </>
-                )}
-              </button>
-
-              {/* حل مشكلة الرابط 404 */}
-              <div className="pt-8 border-t border-stone-100">
-                <p className="text-[10px] text-stone-300 font-bold mb-3">افتح التطبيق على هاتفك الآن</p>
-                <button 
-                  onClick={handleCopyLink}
-                  className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 ${copySuccess ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-500 border border-stone-200 shadow-inner'}`}
-                >
-                  {copySuccess ? '✓ تم نسخ الرابط الفعلي' : '📋 اضغط هنا لنسخ الرابط الصحيح لهاتفك'}
-                </button>
-                <p className="text-[8px] text-stone-300 mt-2 font-bold">انسخه وأرسله لنفسك عبر الواتساب وافتحه من الهاتف</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-10 animate-in slide-in-from-left duration-500">
-            <h2 className="text-3xl font-black text-teal-950">رقم الهاتف إلزامي</h2>
-            <div className="space-y-2">
-              <input 
-                type="tel"
-                placeholder="7X XXX XXX"
-                className="w-full p-8 bg-white border-2 border-stone-100 rounded-[3rem] text-center text-4xl font-black tracking-widest outline-none focus:border-[#d4af37]"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-              <button className="text-[10px] text-stone-400 font-bold underline" onClick={() => alert("سيتم إبلاغ المشرف علي طه بأنك لا تملك رقماً، لكن لا يمكنك المتابعة آلياً.")}>ليس لدي رقم هاتف؟</button>
-            </div>
-            <button 
-              disabled={phone.length < 8}
-              onClick={nextStep}
-              className="w-full luxury-gradient text-white p-7 rounded-[2.5rem] font-black shadow-2xl active:scale-95 transition-all"
-            >
-              إرسال كود التفعيل
-            </button>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-10 animate-in slide-in-from-left duration-500">
-            <h2 className="text-3xl font-black text-teal-950">أدخل الكود</h2>
-            <input 
-              type="text" placeholder="----"
-              className="w-full p-8 bg-white border-2 border-stone-100 rounded-[3rem] text-center text-6xl font-black tracking-[1.5rem]"
-              value={verifyCode}
-              onChange={(e) => setVerifyCode(e.target.value.slice(0,4))}
-            />
-            <button onClick={nextStep} className="w-full bg-teal-950 text-white p-7 rounded-[2.5rem] font-black shadow-2xl">تأكيد</button>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="space-y-6 text-right pb-10">
-            <h2 className="text-2xl font-black text-center mb-6">إعداد الملف الشخصي</h2>
-            <div className="grid grid-cols-2 gap-4">
-               <SelectField label="الجنس" options={['ذكر', 'أنثى']} onChange={(v) => setFormData({...formData, gender: v as Gender})} />
-               <SelectField label="العمر" options={['18-45', '4-10', '10-18', '45+']} onChange={(v) => setFormData({...formData, ageGroup: v as UserAgeGroup, isChildMode: v === '4-10'})} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-               <InputField label="الجنسية" placeholder="لبناني" onChange={(v) => setFormData({...formData, nationality: v})} />
-               <InputField label="المدينة" placeholder="بيروت" onChange={(v) => setFormData({...formData, location: {...formData.location!, city: v}})} />
-            </div>
-            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 text-center">
-               <p className="text-[10px] font-bold text-amber-700">هل لديك حساب Whish Money؟</p>
-               <div className="flex gap-2 mt-2">
-                 <button onClick={() => setFormData({...formData, hasWhishMoney: true})} className={`flex-1 p-2 rounded-xl text-[10px] font-black ${formData.hasWhishMoney ? 'bg-amber-500 text-white' : 'bg-white border'}`}>نعم</button>
-                 <button onClick={() => setFormData({...formData, hasWhishMoney: false})} className={`flex-1 p-2 rounded-xl text-[10px] font-black ${!formData.hasWhishMoney ? 'bg-amber-500 text-white' : 'bg-white border'}`}>لا</button>
+        <div className="w-full bg-white dark:bg-stone-900 p-8 rounded-[3.5rem] shadow-2xl border-2 border-stone-50 dark:border-white/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#50A9B4]/5 rounded-full blur-3xl"></div>
+          
+          {step === 'language' && (
+            <div className="space-y-8 text-center relative z-10">
+               <h2 className="text-xl font-black">{translations.ar.selectLang} / {translations.en.selectLang}</h2>
+               <div className="grid grid-cols-1 gap-4">
+                  <button onClick={() => { setFormData({...formData, language: 'ar'}); setStep('auth_type'); }} className="w-full bg-[#1E3A34] text-white p-6 rounded-[2rem] font-black text-lg shadow-lg active:scale-95 transition-all">العربية</button>
+                  <button onClick={() => { setFormData({...formData, language: 'en'}); setStep('auth_type'); }} className="w-full border-4 border-stone-50 dark:border-white/10 p-6 rounded-[2rem] font-black text-lg active:scale-95 transition-all">English</button>
                </div>
             </div>
-            <button 
-              onClick={() => onComplete({...formData, id: 'U'+Date.now(), phone, isVerified: true} as UserProfile)}
-              className="w-full luxury-gradient text-white p-7 rounded-[2.5rem] font-black shadow-2xl mt-4"
-            >
-              ابدأ الرحلة الإيمانية
-            </button>
-          </div>
-        )}
+          )}
+
+          {step === 'auth_type' && (
+            <div className="space-y-8 text-center relative z-10">
+               <h2 className="text-2xl font-black">{t.welcome}</h2>
+               <button onClick={() => setStep('phone')} className="w-full bg-[#1E3A34] text-white p-6 rounded-[2rem] font-black flex items-center justify-center gap-4 shadow-xl active:scale-95 transition-all border-b-4 border-[#D4AF37]">
+                 <span className="text-2xl">📱</span> {t.phoneLogin}
+               </button>
+               <button onClick={() => setStep('language')} className="text-stone-300 dark:text-stone-600 text-[10px] font-black uppercase tracking-[0.3em]">{t.back}</button>
+            </div>
+          )}
+
+          {step === 'phone' && (
+            <div className="space-y-8 relative z-10">
+               <h2 className="text-xl font-black text-center">{t.enterPhone}</h2>
+               <div className="flex gap-3" dir="ltr">
+                  <div className="h-16 px-4 bg-stone-50 dark:bg-stone-800 rounded-2xl border-2 flex items-center font-black text-[#50A9B4]">+961</div>
+                  <input type="tel" className="flex-1 h-16 px-5 bg-stone-50 dark:bg-stone-800 rounded-2xl border-2 font-black text-xl tracking-widest outline-none focus:border-[#D4AF37] transition-all" placeholder="70 000 000" />
+               </div>
+               <button onClick={() => setStep('otp')} className="w-full bg-[#1E3A34] text-white p-6 rounded-[2rem] font-black text-lg shadow-xl active:scale-95 transition-all">{t.sendOtp}</button>
+            </div>
+          )}
+
+          {step === 'otp' && (
+            <div className="space-y-8 relative z-10">
+               <h2 className="text-xl font-black text-center">{t.enterOtp}</h2>
+               <div className="flex justify-between gap-2" dir="ltr">
+                  {[0,1,2,3,4,5].map(i => (
+                    <input key={i} id={`otp-${i}`} type="text" maxLength={1} className="w-11 h-16 bg-stone-50 dark:bg-stone-800 border-2 rounded-2xl text-center font-black text-2xl focus:border-[#D4AF37] outline-none" value={inputCode[i]} onChange={e => handleOtpChange(i, e.target.value)} />
+                  ))}
+               </div>
+               <button onClick={() => setStep('basic_info')} className="w-full bg-[#1E3A34] text-white p-6 rounded-[2rem] font-black active:scale-95 transition-all shadow-xl">{t.verify}</button>
+            </div>
+          )}
+
+          {step === 'basic_info' && (
+            <div className="space-y-8 relative z-10">
+               <h2 className="text-2xl font-black text-center">{t.profileTitle}</h2>
+               <input 
+                 className="w-full h-16 px-6 bg-stone-50 dark:bg-stone-800 rounded-[2rem] border-2 font-black text-center text-lg outline-none focus:border-[#D4AF37] transition-all"
+                 placeholder={t.fullName}
+                 value={formData.name}
+                 onChange={e => setFormData({...formData, name: e.target.value})}
+               />
+               <div className="grid grid-cols-2 gap-4">
+                  <button onClick={() => setFormData({...formData, gender: Gender.MALE})} className={`p-5 rounded-3xl border-4 font-black transition-all ${formData.gender === Gender.MALE ? 'bg-[#1E3A34] border-[#D4AF37] text-white' : 'bg-white border-stone-50 text-stone-300'}`}>{t.genderM}</button>
+                  <button onClick={() => setFormData({...formData, gender: Gender.FEMALE})} className={`p-5 rounded-3xl border-4 font-black transition-all ${formData.gender === Gender.FEMALE ? 'bg-[#50A9B4] border-[#D4AF37] text-white' : 'bg-white border-stone-50 text-stone-300'}`}>{t.genderF}</button>
+               </div>
+               <button onClick={() => setStep('location')} className="w-full bg-[#1E3A34] text-white p-6 rounded-[2rem] font-black text-lg shadow-xl active:scale-95 transition-all">{t.next}</button>
+            </div>
+          )}
+
+          {step === 'location' && (
+            <div className="space-y-8 relative z-10">
+               <h2 className="text-2xl font-black text-center">{t.residence}</h2>
+               <div className="space-y-4">
+                  <input 
+                    className="w-full h-16 px-6 bg-stone-50 dark:bg-stone-800 rounded-[2rem] border-2 font-black text-center text-lg outline-none focus:border-[#D4AF37] transition-all"
+                    placeholder={t.country}
+                    value={formData.nationality}
+                    onChange={e => setFormData({...formData, nationality: e.target.value})}
+                  />
+                  <input 
+                    className="w-full h-16 px-6 bg-stone-50 dark:bg-stone-800 rounded-[2rem] border-2 font-black text-center text-lg outline-none focus:border-[#D4AF37] transition-all"
+                    placeholder={t.city}
+                    value={formData.location?.city}
+                    onChange={e => setFormData({...formData, location: { lat: 0, lng: 0, city: e.target.value }})}
+                  />
+               </div>
+               <button onClick={finalize} className="w-full bg-[#1E3A34] text-white p-7 rounded-[2.5rem] font-black text-xl shadow-2xl border-b-8 border-[#D4AF37] active:scale-95 transition-all">{t.start}</button>
+            </div>
+          )}
+        </div>
+        
+        <p className="mt-8 text-[8px] font-black text-stone-300 dark:text-stone-700 uppercase tracking-[0.6em]">AliTech Intelligence Quality</p>
       </div>
     </div>
   );
 };
-
-const SelectField = ({ label, options, onChange }: any) => (
-  <div className="space-y-1">
-    <label className="text-[10px] font-black text-stone-300 pr-2">{label}</label>
-    <select className="w-full p-4 bg-white border border-stone-100 rounded-2xl font-black text-xs" onChange={e => onChange(e.target.value)}>
-      {options.map((o: any) => <option key={o} value={o}>{o}</option>)}
-    </select>
-  </div>
-);
-
-const InputField = ({ label, placeholder, onChange }: any) => (
-  <div className="space-y-1">
-    <label className="text-[10px] font-black text-stone-300 pr-2">{label}</label>
-    <input type="text" placeholder={placeholder} className="w-full p-4 bg-white border border-stone-100 rounded-2xl font-black text-xs" onChange={e => onChange(e.target.value)} />
-  </div>
-);
 
 export default Onboarding;

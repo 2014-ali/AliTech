@@ -19,13 +19,13 @@ export interface PrayerOffsets {
   isha: number;
 }
 
-export interface SheikhConfig {
-  fajr: string;
-  dhuhr: string;
-  asr: string;
-  maghrib: string;
-  isha: string;
-  quran: string;
+export interface IndividualPrayerConfig {
+  sheikh: string;
+  azanType: 'standard' | 'takbeer' | 'voice_only' | 'silent';
+  reminderBefore: number;
+  preReminderSound: string;
+  isEnabled: boolean;
+  repeatInterval: number;
 }
 
 export interface UserProfile {
@@ -37,19 +37,42 @@ export interface UserProfile {
   ageGroup: UserAgeGroup;
   location: { lat: number; lng: number; city: string };
   nationality: string;
-  isNewToIslam: boolean;
-  isChildMode: boolean;
-  hasWhishMoney: boolean;
-  robotName?: string;
-  subscriptionTier: number;
+  avatar?: string;
+  language: 'ar' | 'en';
+  isDarkMode: boolean;
+  subscriptionTier: 'free' | 'royal' | 'gold';
   prayerOffsets: PrayerOffsets;
-  sheikhs: SheikhConfig;
-  azanSound: string;
-  isDoNotDisturb: boolean;
-  prePrayerReminder: number;
+  prayerConfigs: {
+    fajr: IndividualPrayerConfig;
+    dhuhr: IndividualPrayerConfig;
+    asr: IndividualPrayerConfig;
+    maghrib: IndividualPrayerConfig;
+    isha: IndividualPrayerConfig;
+  };
   use12HourFormat: boolean;
-  fastingDays: string[]; // ISO date strings
+  // نظام المساعد الدراسي
+  schoolReturnTime?: string; // بصيغة HH:mm
+  homeworkStatus: 'idle' | 'reminding' | 'solving' | 'finished';
+  lastHomeworkCheck?: string;
+  // New properties to fix missing property errors
+  robotName?: string;
+  isChildMode?: boolean;
+  fastingDays: string[];
   recurringFasting: 'none' | 'mon-thu';
+}
+
+export interface Surah {
+  id: number;
+  name: string;
+  arabicName: string;
+  verses: number;
+  type: string;
+}
+
+export interface Message {
+  role: 'user' | 'model';
+  text: string;
+  drawing?: string;
 }
 
 export interface Ad {
@@ -57,26 +80,33 @@ export interface Ad {
   title: string;
   content: string;
   imageUrl: string;
-  country: string;
 }
 
+// Fixed missing Complaint export
 export interface Complaint {
   id: string;
   userId: string;
   userName: string;
   text: string;
-  date: string;
+  timestamp: string;
 }
 
-export interface Message {
-  role: 'user' | 'model';
+// Fixed missing SentCode export for AdminPanel
+export interface SentCode {
+  id: string;
+  targetPhone: string;
+  code: string;
+  description: string;
+  isClaimed: boolean;
+}
+
+// Fixed missing CommunityMessage export
+export interface CommunityMessage {
+  id: string;
+  userId: string;
+  userName: string;
+  role: 'user' | 'admin' | 'robot';
   text: string;
-}
-
-export interface Surah {
-  id: number;
-  name: string;
-  verses: number;
-  type: string;
-  arabicName: string;
+  timestamp: string;
+  avatar?: string;
 }

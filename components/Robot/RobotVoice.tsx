@@ -49,24 +49,15 @@ const RobotVoice: React.FC<{ user: UserProfile; onClose: () => void }> = ({ user
     await audioContextRef.current.resume();
     await outputAudioContextRef.current.resume();
 
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    const instruction = `أنت رفيق ذكي وحكيم جداً يدعى "${user.robotName || 'علي'}". 
-أنت العقل المفكر لتطبيق 'صديقك المسلم' من تطوير ${DEVELOPER}.
-
-أنت تتحدث صوتياً الآن مع:
-- ${user.name}، من ${user.location.city}، عمره ${user.ageGroup}.
-- حالته الإيمانية: ${user.isNewToIslam ? 'جديد على الإسلام (كن مقنعاً وعلمياً برفق)' : 'مسلم ممارس'}.
-- وضع الطفل: ${user.isChildMode ? 'مفعّل (كن مرحاً جداً واستخدم عبارات تشجيعية للأطفال)' : 'غير مفعّل'}.
-
-أنت تعرف كل شيء في التطبيق:
-- يوجد قسم للقرآن الكريم، الأذكار، مواقيت الصلاة، وتقويم الصيام.
-- هناك ميزة الربط العائلي والتحكم في التلفاز.
-- الدعم الفني والمادي يتم عبر المشرف علي طه (${ADMIN_PHONE}).
-
-عندما تشرح شيئاً معقداً، ارسم شكلاً توضيحياً بـ SVG داخل وسم <drawing>...</drawing>.
-تحدث باختصار لأنك في وضع الصوت، وكن دائماً محفزاً وإيجابياً.`;
+    const instruction = `أنت "${user.robotName || 'علي'}"، العقل المفكر لتطبيق 'صديقك المسلم' من AliTech.
+قواعد المحادثة الصوتية الصارمة:
+1. الاختصار القاتل: أجب بجمل قصيرة جداً ومباشرة.
+2. لا ترحب مطلقاً: ابدأ بالرد على كلام المستخدم فوراً دون مقدمات.
+3. التركيز: لا تخرج عن سياق السؤال ولا تقترح مواضيع أخرى.
+4. الشخصية: وقور، حكيم، ومفيد.`;
 
     const sessionPromise = ai.live.connect({
       model: 'gemini-2.5-flash-native-audio-preview-12-2025',
@@ -134,18 +125,18 @@ const RobotVoice: React.FC<{ user: UserProfile; onClose: () => void }> = ({ user
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[200] bg-teal-950 flex flex-col items-center p-6 text-center font-['Cairo'] overflow-hidden">
+    <div className="fixed inset-0 z-[200] bg-[#134E4A] flex flex-col items-center p-6 text-center font-['Cairo'] overflow-hidden">
       <div className="w-full flex justify-between items-center mb-10 shrink-0">
-        <span className="text-white/20 text-[10px] font-black tracking-widest uppercase">AliTech Intelligence Engine</span>
+        <span className="text-[#C5A059] text-[10px] font-black tracking-widest uppercase">AliTech Intelligence Engine</span>
         <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white">✕</button>
       </div>
 
       {!isReady ? (
         <div className="flex-1 flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95">
-           <div className="w-40 h-40 bg-white rounded-[3rem] flex items-center justify-center text-8xl shadow-2xl border-4 border-[#d4af37]/20">🤖</div>
+           <div className="w-40 h-40 bg-white rounded-[3rem] flex items-center justify-center text-8xl shadow-2xl border-4 border-[#C5A059]">🤖</div>
            <h2 className="text-2xl font-black text-white">تحدث الآن مع {user.robotName || 'علي'}</h2>
-           <p className="text-stone-400 text-xs px-10">سيكون "علي" مدركاً تماماً لموقعك وصيامك وصلاتك ليقدم لك أفضل نصيحة.</p>
-           <button onClick={startSession} className="bg-emerald-500 text-white px-10 py-5 rounded-[2rem] font-black text-lg shadow-xl active:scale-95 transition-all">ابدأ المحادثة 🎙️</button>
+           <p className="text-stone-300 text-xs px-10">سيكون رداً مختصراً، حكيماً، ومباشراً كما طلبت.</p>
+           <button onClick={startSession} className="bg-[#C5A059] text-teal-950 px-10 py-5 rounded-[2rem] font-black text-lg shadow-xl active:scale-95 transition-all">ابدأ المحادثة 🎙️</button>
         </div>
       ) : (
         <div className="flex-1 w-full flex flex-col items-center gap-8 overflow-hidden">
@@ -156,24 +147,23 @@ const RobotVoice: React.FC<{ user: UserProfile; onClose: () => void }> = ({ user
            <div className="flex flex-col items-center shrink-0">
               <div className={`w-36 h-36 rounded-[2.5rem] bg-white flex items-center justify-center shadow-2xl relative transition-all duration-500 ${status === 'speaking' ? 'scale-110' : 'scale-100'}`}>
                  <span className="text-7xl">🤖</span>
-                 {status === 'speaking' && <div className="absolute inset-0 rounded-[2.5rem] border-4 border-emerald-400 animate-ping opacity-20"></div>}
+                 {status === 'speaking' && <div className="absolute inset-0 rounded-[2.5rem] border-4 border-[#C5A059] animate-ping opacity-20"></div>}
               </div>
               <h3 className="text-xl font-black text-white mt-6">{user.robotName || 'علي'}</h3>
-              <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest mt-1">
-                {status === 'connecting' ? 'جاري الاتصال بالعقل المفكر...' : status === 'listening' ? 'أسمعك يا بطل...' : 'أجيبك الآن...'}
+              <p className="text-[10px] text-[#C5A059] font-bold uppercase tracking-widest mt-1">
+                {status === 'connecting' ? 'جاري الاتصال...' : status === 'listening' ? 'أسمعك...' : 'أجيبك باختصار...'}
               </p>
            </div>
 
            <div className="flex gap-2 h-10 items-end shrink-0">
              {[1,2,3,4,5].map(i => (
-               <div key={i} className={`w-1.5 rounded-full bg-emerald-400 transition-all duration-300 ${status === 'speaking' ? 'animate-bounce' : 'opacity-20'}`} 
+               <div key={i} className={`w-1.5 rounded-full bg-[#C5A059] transition-all duration-300 ${status === 'speaking' ? 'animate-bounce' : 'opacity-20'}`} 
                  style={{ height: status === 'speaking' ? `${20 + Math.random()*20}px` : '10px', animationDelay: `${i*0.1}s` }} />
              ))}
            </div>
         </div>
       )}
-
-      <div className="mt-10 mb-4 opacity-20 text-white text-[8px] font-black uppercase tracking-[0.5em]">Global Context Aware Engine</div>
+      <div className="mt-10 mb-4 opacity-40 text-white text-[8px] font-black uppercase tracking-[0.5em]">Global Context Aware Engine • AliTech</div>
     </div>
   );
 };

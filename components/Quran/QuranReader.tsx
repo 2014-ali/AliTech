@@ -1,187 +1,175 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, Surah } from '../../types';
+import { SHEIKHS } from '../../constants';
 
-const SHEIKH_AUDIO_MAP: Record<string, string> = {
-  'مشاري العفاسي': 'ar.alafasy',
-  'عبد الباسط عبد الصمد': 'ar.abdulsamad',
-  'محمد صديق المنشاوي': 'ar.minshawi',
-  'محمود خليل الحصري': 'ar.husary',
-  'ياسر الدوسري': 'ar.dossari',
-  'ماهر المعيقلي': 'ar.mahermuaiqly'
-};
-
-const SHEIKH_LIST = Object.keys(SHEIKH_AUDIO_MAP);
+interface Ayah {
+  number: number;
+  text: string;
+  audio: string;
+}
 
 const QuranReader: React.FC<{ user: UserProfile }> = ({ user }) => {
   const [selectedSurah, setSelectedSurah] = useState<Surah | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [activeVerse, setActiveVerse] = useState<number | null>(null);
-  const [currentSheikh, setCurrentSheikh] = useState(user.sheikhs.quran || SHEIKH_LIST[0]);
-  const [showSheikhPicker, setShowSheikhPicker] = useState(false);
-  // Added missing searchTerm and setSearchTerm state
-  const [searchTerm, setSearchTerm] = useState('');
+  const [ayahs, setAyahs] = useState<Ayah[]>([]);
+  const [currentAyahIndex, setCurrentAyahIndex] = useState(-1);
+  const [loading, setLoading] = useState(false);
+  const [selectedSheikh, setSelectedSheikh] = useState(SHEIKHS[0]);
+  const [showSheikhMenu, setShowSheikhMenu] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const verseListRef = useRef<HTMLDivElement>(null);
+  const ayahRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const fullSurahList: Surah[] = [
-    { id: 1, name: "Al-Fatihah", arabicName: "الفاتحة", verses: 7, type: "مكية" },
-    { id: 2, name: "Al-Baqarah", arabicName: "البقرة", verses: 286, type: "مدنية" },
-    { id: 18, name: "Al-Kahf", arabicName: "الكهف", verses: 110, type: "مكية" },
-    { id: 36, name: "Yaseen", arabicName: "يس", verses: 83, type: "مكية" },
-    { id: 112, name: "Al-Ikhlas", arabicName: "الإخلاص", verses: 4, type: "مكية" },
+  const surahNames = [
+    "الفاتحة", "البقرة", "آل عمران", "النساء", "المائدة", "الأنعام", "الأعراف", "الأنفال", "التوبة", "يونس", "هود", "يوسف", "الرعد", "إبراهيم", "الحجر", "النحل", "الإسراء", "الكهف", "مريم", "طه", "الأنبياء", "الحج", "المؤمنون", "النور", "الفرقان", "الشعراء", "النمل", "القصص", "العنكبوت", "الروم", "لقمان", "السجدة", "الأحزاب", "سبأ", "فاطر", "يس", "الصافات", "ص", "الزمر", "غافر", "فصلت", "الشورى", "الزخرف", "الدخان", "الجاثية", "الأحقاف", "محمد", "الفتح", "الحجرات", "ق", "الذاريات", "الطور", "النجم", "القمر", "الرحمن", "الواقعة", "الحديد", "المجادلة", "الحشر", "الممتحنة", "الصف", "الجمعة", "المنافقون", "التغابن", "الطلاق", "التحريم", "الملك", "القلم", "الحاقة", "المعارج", "نوح", "الجن", "المزمل", "المدثر", "القيامة", "الإنسان", "المرسلات", "النبأ", "النازعات", "عبس", "التكوير", "الانفطار", "المطففين", "الانشقاق", "البروج", "الطارق", "الأعلى", "الغاشية", "الفجر", "البلد", "الشمس", "الليل", "الضحى", "الشرح", "التين", "العلق", "القدر", "البينة", "الزلزلة", "العاديات", "القارعة", "التكاثر", "العصر", "الهمزة", "الفيل", "قريش", "الماعون", "الكوثر", "الكافرون", "النصر", "المسد", "الإخلاص", "الفلق", "الناس"
   ];
 
-  const playVerse = (verseNum: number) => {
-    if (!selectedSurah) return;
-    setActiveVerse(verseNum);
-    
-    // التمرير التلقائي للآية الحالية لتبقى في المنتصف
-    const verseEl = document.getElementById(`verse-${verseNum}`);
-    if (verseEl) {
-      verseEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+  const allSurahs: Surah[] = surahNames.map((name, index) => ({
+    id: index + 1,
+    name: `Surah ${index + 1}`,
+    arabicName: name,
+    verses: 0,
+    type: index < 80 ? "مكية" : "مدنية"
+  }));
 
-    const sheikhId = SHEIKH_AUDIO_MAP[currentSheikh] || 'ar.alafasy';
-    const verseId = selectedSurah.id * 1000 + verseNum - 1000;
-    const audioUrl = `https://cdn.islamic.network/quran/audio/128/${sheikhId}/${verseId}.mp3`;
-    
+  const fetchSurahAyahs = async (surahId: number, sheikhApiId: string) => {
+    setLoading(true);
+    setCurrentAyahIndex(-1);
+    try {
+      const res = await fetch(`https://api.alquran.cloud/v1/surah/${surahId}/${sheikhApiId}`);
+      const data = await res.json();
+      const fetchedAyahs = data.data.ayahs.map((a: any) => ({
+        number: a.numberInSurah,
+        text: a.text,
+        audio: a.audio
+      }));
+      setAyahs(fetchedAyahs);
+      ayahRefs.current = new Array(fetchedAyahs.length).fill(null);
+    } catch (e) {
+      console.error("Failed to load surah ayahs", e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (selectedSurah) {
+      fetchSurahAyahs(selectedSurah.id, selectedSheikh.apiId);
+    }
+  }, [selectedSheikh, selectedSurah]);
+
+  const selectSurah = (s: Surah) => {
+    setSelectedSurah(s);
+  };
+
+  const playAyah = (index: number) => {
+    if (index >= ayahs.length) {
+      setIsPlaying(false);
+      setCurrentAyahIndex(-1);
+      return;
+    }
+    setCurrentAyahIndex(index);
     if (audioRef.current) {
-      audioRef.current.src = audioUrl;
-      audioRef.current.play().catch(e => {
-        console.warn("Autoplay blocked, user interaction required.");
-        setIsPlaying(false);
-      });
+      audioRef.current.src = ayahs[index].audio;
+      audioRef.current.play();
+      setIsPlaying(true);
+      ayahRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
-  const togglePlayback = () => {
+  const togglePlay = () => {
     if (isPlaying) {
       audioRef.current?.pause();
       setIsPlaying(false);
     } else {
-      setIsPlaying(true);
-      playVerse(activeVerse || 1);
+      if (currentAyahIndex === -1) playAyah(0);
+      else {
+        audioRef.current?.play();
+        setIsPlaying(true);
+      }
     }
   };
 
-  useEffect(() => {
-    audioRef.current = new Audio();
-    const handleEnded = () => {
-      setActiveVerse(prev => {
-        if (selectedSurah && prev && prev < selectedSurah.verses) {
-          const next = prev + 1;
-          playVerse(next);
-          return next;
-        }
-        setIsPlaying(false);
-        return null;
-      });
-    };
-    audioRef.current.addEventListener('ended', handleEnded);
-    return () => {
-      audioRef.current?.pause();
-      audioRef.current?.removeEventListener('ended', handleEnded);
-    };
-  }, [selectedSurah, currentSheikh]);
+  return (
+    <div className={`h-full flex flex-col font-['Cairo'] ${user.isDarkMode ? 'bg-[#121212]' : 'bg-[#F8F5F0]'}`}>
+      <div className="p-8 md:p-12 bg-[#134E4A] text-white shrink-0 rounded-b-[4rem] shadow-xl text-center relative z-20">
+         <h2 className="text-2xl md:text-4xl font-black">المصحف المرتل</h2>
+         <p className="text-[10px] md:text-xs text-[#C5A059] font-black uppercase tracking-[0.4em] mt-1">AliTech Holy Quran System</p>
+         
+         <button 
+           onClick={() => setShowSheikhMenu(!showSheikhMenu)}
+           className="mt-6 bg-white/10 px-6 py-3 rounded-2xl text-[10px] md:text-xs font-black border border-white/20 backdrop-blur-md flex items-center gap-2 mx-auto"
+         >
+           <span>صوت القارئ: {selectedSheikh.name}</span>
+           <span>▼</span>
+         </button>
 
-  const fatihahVerses = [
-    "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ", "الرَّحْمَٰنِ الرَّحِيمِ", "مَالِكِ يَوْمِ الدِّينِ",
-    "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ", "اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ",
-    "صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ"
-  ];
-
-  if (selectedSurah) {
-    return (
-      <div className="h-full flex flex-col bg-[#FAF8F4] font-['Cairo'] overflow-hidden">
-        {/* Compact Header */}
-        <div className="p-4 luxury-gradient text-white flex justify-between items-center shadow-lg shrink-0">
-          <button onClick={() => setSelectedSurah(null)} className="text-sm font-black opacity-80">← رجوع</button>
-          <div className="text-center">
-             <h2 className="font-black text-md">{selectedSurah.arabicName}</h2>
-             <p className="text-[8px] text-teal-200 uppercase tracking-widest">{currentSheikh}</p>
-          </div>
-          <button onClick={() => setShowSheikhPicker(true)} className="text-lg">👤</button>
-        </div>
-        
-        {/* Reading Area - Fixed Height with internal scroll */}
-        <div ref={verseListRef} className="flex-1 overflow-y-auto p-6 space-y-8 text-center scroll-hide">
-          <div className="text-2xl font-serif text-teal-900 py-8 border-b-2 border-stone-50">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
-          {selectedSurah.id === 1 ? fatihahVerses.map((v, i) => (
-            <p key={i} id={`verse-${i+1}`} onClick={() => playVerse(i+1)} className={`text-2xl font-serif leading-loose transition-all duration-500 p-4 rounded-3xl cursor-pointer ${activeVerse === i+1 ? 'text-amber-600 bg-amber-50 scale-105 shadow-inner' : 'text-stone-800 opacity-40'}`}>
-              {v} <span className="text-[10px] bg-stone-100 px-2 py-1 rounded-full text-stone-400 mr-2">{i+1}</span>
-            </p>
-          )) : (
-            <div className="py-20 text-stone-300">
-               <p className="text-lg font-black tracking-tight">النص الكامل جارٍ التحميل...</p>
-               <div className="mt-10 text-6xl gold-text font-black animate-bounce">{activeVerse || "؟"}</div>
-            </div>
-          )}
-        </div>
-
-        {/* Floating Controls Area - Fixed at bottom */}
-        <div className="p-4 bg-white border-t border-stone-100 flex items-center justify-between shadow-2xl shrink-0">
-           <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 bg-teal-900 rounded-2xl flex items-center justify-center text-white shadow-lg ${isPlaying ? 'animate-pulse' : ''}`}>🎧</div>
-              <div>
-                 <p className="text-[10px] font-black text-stone-800">{currentSheikh}</p>
-                 <p className="text-[8px] text-emerald-600 font-bold uppercase">{isPlaying ? 'جاري التلاوة' : 'متوقف'}</p>
-              </div>
+         {showSheikhMenu && (
+           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 md:w-80 bg-white rounded-3xl shadow-2xl p-2 z-50 text-stone-800 animate-in slide-in-from-top-2">
+             {SHEIKHS.map(s => (
+               <button 
+                 key={s.id}
+                 onClick={() => { setSelectedSheikh(s); setShowSheikhMenu(false); }}
+                 className={`w-full text-right p-4 rounded-2xl font-black text-xs md:text-sm transition-colors ${selectedSheikh.id === s.id ? 'bg-[#50A9B4] text-white' : 'hover:bg-stone-50'}`}
+               >
+                 {s.name}
+               </button>
+             ))}
            </div>
-           <button onClick={togglePlayback} className="w-14 h-14 luxury-gradient text-white rounded-full flex items-center justify-center text-2xl shadow-xl active:scale-90 transition-all">
-             {isPlaying ? '⏸' : '▶'}
-           </button>
-        </div>
+         )}
+      </div>
 
-        {/* Sheikh Picker - Popover */}
-        {showSheikhPicker && (
-          <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end">
-            <div className="w-full bg-white rounded-t-[3rem] p-8 space-y-6 shadow-2xl animate-in slide-in-from-bottom-20">
-               <h3 className="text-lg font-black text-center text-teal-950">اختر صوت القارئ</h3>
-               <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto p-1 scroll-hide">
-                  {SHEIKH_LIST.map(s => (
-                    <button key={s} onClick={() => { setCurrentSheikh(s); setShowSheikhPicker(false); if(isPlaying) playVerse(activeVerse || 1); }}
-                      className={`p-3 rounded-2xl border-2 text-xs font-black transition-all ${currentSheikh === s ? 'bg-teal-900 text-white border-teal-900' : 'bg-stone-50 border-stone-100 text-stone-600'}`}>
-                      {s}
-                    </button>
-                  ))}
-               </div>
-               <button onClick={() => setShowSheikhPicker(false)} className="w-full py-2 text-[10px] font-black text-stone-300 uppercase">إلغاء</button>
-            </div>
+      <div className="flex-1 overflow-y-auto p-6 md:p-12 space-y-4 pb-32 scroll-hide">
+        {selectedSurah ? (
+          <div className="max-w-4xl mx-auto space-y-6 animate-in zoom-in-95 duration-500">
+             <div className="flex items-center justify-between sticky top-0 bg-[#F8F5F0]/90 dark:bg-[#121212]/90 backdrop-blur-md py-4 z-10 px-4 rounded-3xl">
+                <button onClick={() => { setSelectedSurah(null); setIsPlaying(false); setAyahs([]); }} className="text-xs md:text-sm font-black text-[#134E4A] dark:text-[#50A9B4]">← فهرس السور</button>
+                <div className="text-center">
+                   <h3 className="text-3xl font-black text-[#134E4A] dark:text-white">{selectedSurah.arabicName}</h3>
+                </div>
+                <button 
+                   onClick={togglePlay}
+                   className="w-14 h-14 bg-[#134E4A] text-white rounded-full flex items-center justify-center text-2xl shadow-lg active:scale-90 transition-all"
+                >
+                   {isPlaying ? "⏸" : "▶"}
+                </button>
+             </div>
+
+             <audio ref={audioRef} onEnded={() => playAyah(currentAyahIndex + 1)} />
+
+             {loading ? (
+                <div className="text-center p-20 animate-pulse text-stone-300 font-black">جاري تحميل الآيات المباركة...</div>
+             ) : (
+                <div className="bg-white dark:bg-stone-900 p-8 md:p-16 rounded-[3.5rem] shadow-sm text-right leading-[3.5] font-['Tajawal'] text-3xl md:text-4xl">
+                   {ayahs.map((ayah, idx) => (
+                      <div 
+                        key={idx} 
+                        ref={el => { ayahRefs.current[idx] = el; }}
+                        className={`inline-block p-3 rounded-2xl cursor-pointer transition-all duration-500 ${currentAyahIndex === idx ? 'bg-[#D4AF37]/20 text-[#D4AF37] scale-105 shadow-md ring-2 ring-[#D4AF37]' : 'text-stone-700 dark:text-stone-300 hover:bg-stone-50'}`}
+                        onClick={() => playAyah(idx)}
+                      >
+                         {ayah.text} <span className="text-[#50A9B4] text-sm md:text-lg opacity-50 mx-2">({ayah.number})</span>
+                      </div>
+                   ))}
+                </div>
+             )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-6xl mx-auto">
+            {allSurahs.map(s => (
+              <button key={s.id} onClick={() => selectSurah(s)} className="w-full bg-white dark:bg-stone-900 p-6 md:p-8 rounded-[2.5rem] border border-stone-50 dark:border-white/5 shadow-sm flex items-center justify-between group active:scale-95 transition-all hover:border-[#50A9B4]/30">
+                <div className="flex items-center gap-6">
+                  <div className="w-12 h-12 md:w-14 md:h-14 bg-stone-50 dark:bg-stone-800 rounded-2xl flex items-center justify-center font-black text-xs md:text-sm group-hover:bg-[#50A9B4] group-hover:text-white transition-colors">{s.id}</div>
+                  <h4 className="font-black text-xl md:text-2xl">{s.arabicName}</h4>
+                </div>
+                <div className="text-left">
+                   <span className="text-[10px] md:text-xs text-stone-300 font-bold block">{s.type}</span>
+                   <span className="text-[8px] md:text-[10px] text-[#D4AF37] font-black uppercase tracking-widest">Listen to {selectedSheikh.name.split(' ')[0]}</span>
+                </div>
+              </button>
+            ))}
           </div>
         )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full flex flex-col bg-[#FAF8F4] font-['Cairo'] overflow-hidden">
-      <div className="p-6 luxury-gradient text-white flex flex-col items-center shrink-0">
-        <h2 className="text-2xl font-black">القرآن الكريم</h2>
-        <p className="text-[10px] gold-text font-bold uppercase tracking-[0.3em] mt-1">تلاوة عذبة لكل زمان</p>
-      </div>
-      
-      <div className="p-4 shrink-0">
-        <div className="relative">
-          <input type="text" placeholder="ابحث عن السورة..." className="w-full p-4 pr-12 bg-white rounded-2xl shadow-sm outline-none text-sm font-bold text-teal-950 border border-stone-100" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 opacity-30">🔍</span>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-4 space-y-3 scroll-hide pb-20">
-        {fullSurahList.filter(s => s.arabicName.includes(searchTerm)).map(s => (
-          <button key={s.id} onClick={() => setSelectedSurah(s)} className="w-full bg-white p-4 rounded-3xl border border-stone-50 flex items-center justify-between hover:border-teal-200 transition-all active:scale-[0.98]">
-            <div className="flex items-center gap-4">
-               <div className="w-10 h-10 bg-stone-50 text-stone-400 rounded-xl flex items-center justify-center font-black text-xs">{s.id}</div>
-               <div className="text-right">
-                 <h4 className="font-black text-stone-800 text-lg">{s.arabicName}</h4>
-                 <p className="text-[8px] text-stone-300 font-bold uppercase">{s.verses} آية • {s.type}</p>
-               </div>
-            </div>
-            <span className="text-xl opacity-30">📖</span>
-          </button>
-        ))}
       </div>
     </div>
   );
